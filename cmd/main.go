@@ -5,7 +5,7 @@ package main
 
 // #cgo LDFLAGS: -lX11 -lasound
 // #include <X11/Xlib.h>
-// #include "../include/getvol.h"
+// #include "../include/alsa.h"
 import "C"
 
 import (
@@ -17,64 +17,77 @@ import (
 	"unicode"
 )
 
-var batPath string
-var dpy = C.XOpenDisplay(nil)
+var (
+	dpy = C.XOpenDisplay(nil)
 
-func batteryStatus(path string) (rune, error) {
-	buf, err := ioutil.ReadFile(fmt.Sprintf("%s/status", path))
+	batPath  string
+	wifiPath string
+	laPath   string = "/proc/loadavg"
+)
+
+func loadAverage() string {
+	loadavg, err := ioutil.ReadFile(laPath)
 	if err != nil {
-		return '?', err
+		log.Println(err)
+		return "? ? ?"
+	}
+
+	return strings.Join(strings.Fields(string(loadavg))[:3], " ")
+}
+
+func wifi() string {
+	buf, err := ioutil.ReadFile(wifiPath)
+	if err != nil {
+		log.Println(err)
+		return "down"
+	}
+
+	return strings.TrimSpace(string(buf))
+}
+
+func batteryStatus() rune {
+	buf, err := ioutil.ReadFile(fmt.Sprintf("%s/status", batPath))
+	if err != nil {
+		log.Println(err)
+		return '?'
 	}
 
 	switch unicode.ToLower(rune(buf[0])) {
 	case 'c':
-		return '+', nil
+		return '+'
 	case 'd':
-		return '-', nil
+		return '-'
 	case 'i':
-		return '=', nil
+		return '='
 	case 'f':
-		return '=', nil
+		return '='
 	default:
-		return '?', nil
+		return '?'
 	}
 }
 
-func battery(path string) (float64, error) {
-	strnow, err := ioutil.ReadFile(fmt.Sprintf("%s/energy_now", path))
+func battery() float64 {
+	strnow, err := ioutil.ReadFile(fmt.Sprintf("%s/energy_now", batPath))
 	if err != nil {
-		return -1, err
+		log.Println("energy_now", err)
+		return -1
 	}
 
-	strfull, err := ioutil.ReadFile(fmt.Sprintf("%s/energy_full", path))
+	strfull, err := ioutil.ReadFile(fmt.Sprintf("%s/energy_full", batPath))
 	if err != nil {
-		return -1, err
+		log.Println("energy_full", err)
+		return -1
 	}
 
 	var now, full int
 	fmt.Sscanf(string(strnow), "%d", &now)
 	fmt.Sscanf(string(strfull), "%d", &full)
 
-	return float64(now * 100 / full), nil
-}
-
-func loadAverage(file string) (string, error) {
-	loadavg, err := ioutil.ReadFile(file)
-	if err != nil {
-		return "Couldn't read loadavg", err
-	}
-
-	return strings.Join(strings.Fields(string(loadavg))[:3], " "), nil
-}
-
-func setStatus(format string, args ...interface{}) {
-	status := fmt.Sprintf(format, args...)
-	C.XStoreName(dpy, C.XDefaultRootWindow(dpy), C.CString(status))
-	C.XSync(dpy, 1)
+	return float64(now * 100 / full)
 }
 
 func volume() rune {
-	vol := int(C.get_volume())
+	vol := int(C.get_volume()) // call extern func - see include/alsa.h
 
 	if vol < 0 {
 		return 'M'
@@ -84,7 +97,13 @@ func volume() rune {
 		'▁', '▂', '▃', '▄', '▅', '▆', '▇', '█',
 	}
 
-	return sprites[(vol*7)/100]
+	return sprites[(vol*len(sprites))/100]
+}
+
+func setStatus(format string, args ...interface{}) {
+	status := fmt.Sprintf(format, args...)
+	C.XStoreName(dpy, C.XDefaultRootWindow(dpy), C.CString(status))
+	C.XSync(dpy, 1)
 }
 
 func main() {
@@ -92,26 +111,30 @@ func main() {
 		log.Fatal("Can't open display")
 	}
 
-	for {
-		t := time.Now().Format("Jan 2 2006 15:04:05 MST")
-		bat, err := battery(batPath)
-		if err != nil {
-			log.Println(err)
+	var tmpls []string
+	var vals []interface{}
+
+	addField := func(tmpl string, val ...interface{}) {
+		tmpls = append(tmpls, tmpl)
+		vals = append(vals, val...)
+	}
+
+	for range time.Tick(time.Second) {
+		addField("%s", loadAverage())
+
+		if wifiPath != "" {
+			addField("wifi:%s", wifi())
 		}
 
-		batStatus, err := batteryStatus(batPath)
-		if err != nil {
-			log.Println(err)
+		if batPath != "" {
+			addField("bat:%c%0.1f%%", batteryStatus(), battery())
 		}
 
-		la, err := loadAverage("/proc/loadavg")
-		if err != nil {
-			log.Println(err)
-		}
+		addField("vol:%c", volume())
+		addField("%s", time.Now().Format("Mon Jan 2 15:04:05"))
 
-		vol := volume()
-		setStatus("%s | vol:%c | %c%0.1f%% | %s", la, vol, batStatus, bat, t)
+		setStatus(strings.Join(tmpls, " | "), vals...)
 
-		time.Sleep(time.Second)
+		tmpls, vals = tmpls[:0], vals[:0] // clean line
 	}
 }
