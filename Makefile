@@ -15,6 +15,8 @@ LNKPATH := ${shell find /sys/class/net/${IFNAME}/ -name operstate -print0 -quit}
 
 LDFLAGS := -X main.batPath=${BATPATH} -X main.wifiPath=${LNKPATH}
 
+all: build
+
 release: LDFLAGS += -s
 release: build
 

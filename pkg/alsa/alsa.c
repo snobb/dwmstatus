@@ -1,11 +1,9 @@
-/* Source: dwm.suckless.org/dwmstatus/getvol.c*/
 #include <alsa/asoundlib.h>
 #include <alsa/control.h>
 
 #define MUTED 0
 
-int get_volume(void)
-{
+int get_volume(void) {
     long min, max, volume = 0;
     int status = !MUTED;
     snd_mixer_t *handle;
