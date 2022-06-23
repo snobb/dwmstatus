@@ -14,10 +14,12 @@ IFNAME  := ${shell iw dev | awk '/Interface/ { print $$2 }' | tr -d '\n'}
 LNKPATH := ${shell find /sys/class/net/${IFNAME}/ -name operstate -print0 -quit}
 
 LDFLAGS := -X main.batPath=${BATPATH} -X main.wifiPath=${LNKPATH}
-CFLAGS  := --ldflags '${LDFLAGS}' -o ${BIN}/${TARGET}
+
+release: LDFLAGS += -s
+release: build
 
 build:
-	go build ${CFLAGS} ${MAIN}
+	go build --ldflags '${LDFLAGS}' -o ${BIN}/${TARGET} ${MAIN}
 
 install:
 	${INSTALL} ${INSTALL_ARGS} ${BIN}/${TARGET} ${INSTALL_DIR}
