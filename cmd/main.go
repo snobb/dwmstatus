@@ -1,12 +1,6 @@
 package main
 
 // Rewrite of my C version of statusbar.
-// Inspired by https://github.com/oniichaNj/go-dwmstatus
-
-// #cgo LDFLAGS: -lX11 -lasound
-// #include <X11/Xlib.h>
-// #include "../include/alsa.h"
-import "C"
 
 import (
 	"fmt"
@@ -15,14 +9,18 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"dwmstatus/pkg/alsa"
+	"dwmstatus/pkg/x11"
 )
 
 var (
-	dpy = C.XOpenDisplay(nil)
-
 	batPath  string
 	wifiPath string
 	laPath   string = "/proc/loadavg"
+	sprites         = []rune{
+		'▁', '▂', '▃', '▄', '▅', '▆', '▇', '█',
+	}
 )
 
 func loadAverage() string {
@@ -87,29 +85,17 @@ func battery() float64 {
 }
 
 func volume() rune {
-	vol := int(C.get_volume()) // call extern func - see include/alsa.h
-
+	vol := alsa.GetVolume()
 	if vol < 0 {
 		return 'M'
-	}
-
-	sprites := []rune{
-		'▁', '▂', '▃', '▄', '▅', '▆', '▇', '█',
 	}
 
 	return sprites[(vol*len(sprites))/100]
 }
 
-func setStatus(format string, args ...interface{}) {
-	status := fmt.Sprintf(format, args...)
-	C.XStoreName(dpy, C.XDefaultRootWindow(dpy), C.CString(status))
-	C.XSync(dpy, 1)
-}
-
 func main() {
-	if dpy == nil {
-		log.Fatal("Can't open display")
-	}
+	x11.OpenDisplay()
+	defer x11.CloseDisplay()
 
 	var tmpls []string
 	var vals []interface{}
@@ -133,8 +119,7 @@ func main() {
 		addField("vol:%c", volume())
 		addField("%s", time.Now().Format("Mon Jan 2 15:04:05"))
 
-		setStatus(strings.Join(tmpls, " | "), vals...)
-
-		tmpls, vals = tmpls[:0], vals[:0] // clean line
+		x11.SetRootTitle(strings.Join(tmpls, " | "), vals...)
+		tmpls, vals = tmpls[:0], vals[:0] // clean line fields
 	}
 }
