@@ -108,6 +108,8 @@ func main() {
 	for range time.Tick(time.Second) {
 		addField("%s", loadAverage())
 
+		addField("vol:%c", volume())
+
 		if wifiPath != "" {
 			addField("wifi:%s", wifi())
 		}
@@ -116,7 +118,6 @@ func main() {
 			addField("bat:%c%0.1f%%", batteryStatus(), battery())
 		}
 
-		addField("vol:%c", volume())
 		addField("%s", time.Now().Format("Mon Jan 2 15:04:05"))
 
 		x11.SetRootTitle(strings.Join(tmpls, " | "), vals...)
