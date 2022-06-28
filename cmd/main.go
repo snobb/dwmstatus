@@ -4,8 +4,8 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"time"
 	"unicode"
@@ -24,7 +24,7 @@ var (
 )
 
 func loadAverage() string {
-	loadavg, err := ioutil.ReadFile(laPath)
+	loadavg, err := os.ReadFile(laPath)
 	if err != nil {
 		log.Println(err)
 		return "? ? ?"
@@ -34,7 +34,7 @@ func loadAverage() string {
 }
 
 func wifi() string {
-	buf, err := ioutil.ReadFile(wifiPath)
+	buf, err := os.ReadFile(wifiPath)
 	if err != nil {
 		log.Println(err)
 		return "down"
@@ -44,7 +44,7 @@ func wifi() string {
 }
 
 func batteryStatus() rune {
-	buf, err := ioutil.ReadFile(fmt.Sprintf("%s/status", batPath))
+	buf, err := os.ReadFile(fmt.Sprintf("%s/status", batPath))
 	if err != nil {
 		log.Println(err)
 		return '?'
@@ -65,13 +65,13 @@ func batteryStatus() rune {
 }
 
 func battery() float64 {
-	strnow, err := ioutil.ReadFile(fmt.Sprintf("%s/energy_now", batPath))
+	strnow, err := os.ReadFile(fmt.Sprintf("%s/energy_now", batPath))
 	if err != nil {
 		log.Println("energy_now", err)
 		return -1
 	}
 
-	strfull, err := ioutil.ReadFile(fmt.Sprintf("%s/energy_full", batPath))
+	strfull, err := os.ReadFile(fmt.Sprintf("%s/energy_full", batPath))
 	if err != nil {
 		log.Println("energy_full", err)
 		return -1
