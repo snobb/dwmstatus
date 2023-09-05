@@ -17,8 +17,8 @@ import (
 var (
 	batPath  string
 	wifiPath string
-	laPath   string = "/proc/loadavg"
-	sprites         = []rune{
+	laPath   = "/proc/loadavg"
+	sprites  = []rune{
 		'▁', '▂', '▃', '▄', '▅', '▆', '▇', '█',
 	}
 )
@@ -78,8 +78,8 @@ func battery() float64 {
 	}
 
 	var now, full int
-	fmt.Sscanf(string(strnow), "%d", &now)
-	fmt.Sscanf(string(strfull), "%d", &full)
+	_, _ = fmt.Sscanf(string(strnow), "%d", &now)
+	_, _ = fmt.Sscanf(string(strfull), "%d", &full)
 
 	return float64(now * 100 / full)
 }
