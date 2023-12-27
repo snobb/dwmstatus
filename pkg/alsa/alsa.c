@@ -16,21 +16,19 @@ int get_volume(void) {
     snd_mixer_selem_register(handle, NULL, NULL);
     snd_mixer_load(handle);
 
-    snd_mixer_selem_id_malloc(&sid);
+    snd_mixer_selem_id_alloca(&sid);
     snd_mixer_selem_id_set_index(sid, 0);
     snd_mixer_selem_id_set_name(sid, selem_name);
     snd_mixer_elem_t* elem = snd_mixer_find_selem(handle, sid);
 
     snd_mixer_selem_get_playback_switch(elem, SND_MIXER_SCHN_MONO, &status);
     if (status == MUTED) {
-        snd_mixer_selem_id_free(sid);
         snd_mixer_close(handle);
         return -1;
     }
 
     snd_mixer_selem_get_playback_volume_range(elem, &min, &max);
     snd_mixer_selem_get_playback_volume(elem, 0, &volume);
-    snd_mixer_selem_id_free(sid);
     snd_mixer_close(handle);
 
     return ((double)volume / max) * 100;

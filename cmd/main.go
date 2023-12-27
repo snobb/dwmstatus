@@ -90,7 +90,7 @@ func volume() rune {
 		return 'M'
 	}
 
-	return sprites[(vol*len(sprites))/100]
+	return sprites[(vol*(len(sprites)-1))/100]
 }
 
 func main() {
@@ -121,6 +121,6 @@ func main() {
 		addField("%s", time.Now().Format("Mon Jan 2 15:04:05"))
 
 		x11.SetRootTitle(strings.Join(tmpls, " | "), vals...)
-		tmpls, vals = tmpls[:0], vals[:0] // clean line fields
+		tmpls, vals = nil, nil
 	}
 }
