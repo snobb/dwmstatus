@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -13,6 +14,9 @@ import (
 	"dwmstatus/pkg/alsa"
 	"dwmstatus/pkg/x11"
 )
+
+const FILE_BATTERY_NOW = "charge_now"
+const FILE_BATTERY_FULL = "charge_full"
 
 var (
 	batPath  string
@@ -65,21 +69,29 @@ func batteryStatus() rune {
 }
 
 func battery() float64 {
-	strnow, err := os.ReadFile(fmt.Sprintf("%s/energy_now", batPath))
+	strnow, err := os.ReadFile(fmt.Sprintf("%s/%s", batPath, FILE_BATTERY_NOW))
 	if err != nil {
 		log.Println("energy_now", err)
 		return -1
 	}
 
-	strfull, err := os.ReadFile(fmt.Sprintf("%s/energy_full", batPath))
+	strfull, err := os.ReadFile(fmt.Sprintf("%s/%s", batPath, FILE_BATTERY_FULL))
 	if err != nil {
 		log.Println("energy_full", err)
 		return -1
 	}
 
-	var now, full int
-	_, _ = fmt.Sscanf(string(strnow), "%d", &now)
-	_, _ = fmt.Sscanf(string(strfull), "%d", &full)
+	now, err := strconv.Atoi(string(strnow[:len(strnow)-1]))
+	if err != nil {
+		log.Println("energy_now:atoi", err)
+		return -1
+	}
+
+	full, err := strconv.Atoi(string(strfull[:len(strfull)-1]))
+	if err != nil {
+		log.Println("energy_full:atoi", err)
+		return -1
+	}
 
 	return float64(now * 100 / full)
 }
