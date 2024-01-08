@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,9 @@ import (
 
 const FILE_BATTERY_NOW = "charge_now"
 const FILE_BATTERY_FULL = "charge_full"
+const SUSPEND_TIMEOUT = 60
+const SUSPEND_THRESHOLD = 10
+const SUSPEND_CMD = "/usr/local/bin/suspend.sh"
 
 var (
 	batPath  string
@@ -111,6 +115,7 @@ func main() {
 
 	var tmpls []string
 	var vals []interface{}
+	var timer = 0
 
 	addField := func(tmpl string, val ...interface{}) {
 		tmpls = append(tmpls, tmpl)
@@ -127,7 +132,20 @@ func main() {
 		}
 
 		if batPath != "" {
-			addField("bat:%c%0.1f%%", batteryStatus(), battery())
+			status := batteryStatus()
+			charge := battery()
+
+			if status == '-' && charge <= SUSPEND_THRESHOLD {
+				addField("LOW BATTERY[%0.1f%%]:suspending in %ds", charge, SUSPEND_TIMEOUT-timer)
+				timer++
+
+				if timer > SUSPEND_TIMEOUT {
+					_ = exec.Command("/bin/sh", SUSPEND_CMD).Run()
+				}
+			} else {
+				addField("bat:%c%0.1f%%", status, charge)
+				timer = 0
+			}
 		}
 
 		addField("%s", time.Now().Format("Mon Jan 2 15:04:05"))
