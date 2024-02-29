@@ -85,19 +85,19 @@ func battery() float64 {
 		return -1
 	}
 
-	now, err := strconv.Atoi(string(strnow[:len(strnow)-1]))
+	now, err := strconv.ParseFloat(string(strnow[:len(strnow)-1]), 32)
 	if err != nil {
-		log.Println("energy_now:atoi", err)
+		log.Println("energy_now:parseFloat", err)
 		return -1
 	}
 
-	full, err := strconv.Atoi(string(strfull[:len(strfull)-1]))
+	full, err := strconv.ParseFloat(string(strfull[:len(strfull)-1]), 32)
 	if err != nil {
-		log.Println("energy_full:atoi", err)
+		log.Println("energy_full:parseFloat", err)
 		return -1
 	}
 
-	return float64(now * 100 / full)
+	return (now / full) * 100
 }
 
 func volume() rune {
