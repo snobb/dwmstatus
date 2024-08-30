@@ -5,6 +5,9 @@ INSTALL := install
 INSTALL_ARGS := -o root -g root -m 755
 INSTALL_DIR := /usr/local/bin/
 
+# can do "sudo GO=$(which go) make build install clean" if Go is installed in the user folder.
+GO ?= go
+
 # autoconfiguration
 # Battery status if exists.
 BATPATH := ${strip ${shell find /sys -name "BAT[0-9]" -print0 -quit}}
@@ -21,7 +24,7 @@ release: LDFLAGS += -s
 release: build
 
 build:
-	/opt/go/bin/go build --ldflags '${LDFLAGS}' -o ${BIN}/${TARGET} ${MAIN}
+	${GO} build --ldflags '${LDFLAGS}' -o ${BIN}/${TARGET} ${MAIN}
 
 install:
 	${INSTALL} ${INSTALL_ARGS} ${BIN}/${TARGET} ${INSTALL_DIR}
