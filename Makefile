@@ -20,6 +20,9 @@ LDFLAGS := -X main.batPath=${BATPATH} -X main.wifiPath=${LNKPATH}
 
 all: build
 
+lint:
+	golangci-lint run
+
 release: LDFLAGS += -s
 release: build
 

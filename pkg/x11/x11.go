@@ -1,3 +1,4 @@
+// Package x11 is a minimal wrapper around libX11.
 package x11
 
 // #cgo CFLAGS: -pedantic -O3

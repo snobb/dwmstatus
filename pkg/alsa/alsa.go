@@ -1,3 +1,4 @@
+// Package alsa is a minimal wrapper around libasound.
 package alsa
 
 // #cgo CFLAGS: -pedantic -O3

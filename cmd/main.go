@@ -1,3 +1,4 @@
+// Package main is the status bar implementation for dwm.
 package main
 
 // Rewrite of my C version of statusbar.
@@ -16,11 +17,14 @@ import (
 	"dwmstatus/pkg/x11"
 )
 
-const FILE_BATTERY_NOW = "charge_now"
-const FILE_BATTERY_FULL = "charge_full"
-const SUSPEND_TIMEOUT = 60
-const SUSPEND_THRESHOLD = 10
-const SUSPEND_CMD = "/usr/local/bin/suspend.sh"
+const (
+	FileBatteryNow  = "charge_now"
+	FileBatteryFull = "charge_full"
+
+	SuspendTimeout   = 60
+	SuspendThreshold = 10
+	SuspendCommand   = "/usr/local/bin/suspend.sh"
+)
 
 var (
 	batPath  string
@@ -73,13 +77,13 @@ func batteryStatus() rune {
 }
 
 func battery() float64 {
-	strnow, err := os.ReadFile(fmt.Sprintf("%s/%s", batPath, FILE_BATTERY_NOW))
+	strnow, err := os.ReadFile(fmt.Sprintf("%s/%s", batPath, FileBatteryNow))
 	if err != nil {
 		log.Println("energy_now", err)
 		return -1
 	}
 
-	strfull, err := os.ReadFile(fmt.Sprintf("%s/%s", batPath, FILE_BATTERY_FULL))
+	strfull, err := os.ReadFile(fmt.Sprintf("%s/%s", batPath, FileBatteryFull))
 	if err != nil {
 		log.Println("energy_full", err)
 		return -1
@@ -113,8 +117,8 @@ func main() {
 	x11.OpenDisplay()
 	defer x11.CloseDisplay()
 
-	var tmpls []string
-	var vals []interface{}
+	tmpls := make([]string, 0, 5)
+	vals := make([]any, 0, 10)
 	var timer = 0
 
 	addField := func(tmpl string, val ...interface{}) {
@@ -135,12 +139,12 @@ func main() {
 			status := batteryStatus()
 			charge := battery()
 
-			if status == '-' && charge <= SUSPEND_THRESHOLD {
-				addField("LOW BATTERY[%0.1f%%]:suspending in %ds", charge, SUSPEND_TIMEOUT-timer)
+			if status == '-' && charge <= SuspendThreshold {
+				addField("LOW BATTERY[%0.1f%%]:suspending in %ds", charge, SuspendTimeout-timer)
 				timer++
 
-				if timer > SUSPEND_TIMEOUT {
-					_ = exec.Command("/bin/sh", SUSPEND_CMD).Run()
+				if timer > SuspendTimeout {
+					_ = exec.Command("/bin/sh", SuspendCommand).Run()
 				}
 			} else {
 				addField("bat:%c%0.1f%%", status, charge)
@@ -151,6 +155,6 @@ func main() {
 		addField("%s", time.Now().Format("Mon Jan 2 15:04:05"))
 
 		x11.SetRootTitle(strings.Join(tmpls, " | "), vals...)
-		tmpls, vals = nil, nil
+		tmpls, vals = tmpls[:0], vals[:0]
 	}
 }
